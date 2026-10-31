@@ -106,6 +106,104 @@ async def _answer_with_gemma(prompt: str) -> tuple[str, str, str]:
     return response.summary or "", response.architecture or "", response.next_step or ""
 
 
+
+def _evidence_kit(snap: RepositorySnapshot, findings: list[str]) -> dict:
+    """Generate transparent, useful drafts from observed facts when AI is down."""
+    name = snap.repo.full_name
+    readmes = [p for p in snap.paths if p.rsplit("/", 1)[-1].lower().startswith("readme")]
+    manifests = [p for p in snap.paths if p.rsplit("/", 1)[-1].lower() in
+                 {"package.json", "pyproject.toml", "requirements.txt", "cargo.toml", "go.mod"}]
+    files = sorted(snap.paths)
+    setup = (
+        "Read the existing " + (readmes[0] if readmes else "repository documentation (TODO: add README)") +
+        " for instructions. Verify installation commands before running them."
+    )
+    docs = [
+        "# Contributing to " + name,
+        "",
+        "This is a draft contributor guide based on a limited public source scan. Review with maintainers before adoption.",
+        "",
+        "## What this project does",
+        snap.repo.description or "TODO: document the project's purpose and supported use cases.",
+        "",
+        "## Getting started",
+        setup,
+        "",
+        "Detected dependency manifests: " + (", ".join(manifests[:5]) if manifests else "None in common paths. Verify the build process."),
+        "",
+        "1. Fork the repository and create a focused branch.",
+        "2. Read open issues and discuss larger changes with maintainers.",
+        "3. Make one small, reviewable change with any relevant tests.",
+        "4. Document setup and behavior changes in the PR.",
+        "",
+        "## Verification before submitting",
+        "TODO: identify the verified test, lint, and build commands from project documentation.",
+        "Do not assume tests exist simply because the project uses a framework.",
+        "",
+        "## Pull requests",
+        "Explain motivation, link affected files or issues, and add verification steps.",
+    ]
+    titles = findings or ["Document the onboarding and first contribution flow"]
+    issues = []
+    for idx, title in enumerate(titles[:3]):
+        issues.append({
+            "title": title,
+            "body": (
+                "## Context\nThe repository quick scan flagged: " + title + ".\n\n"
+                "## Proposed work\nInvestigate this finding and agree on a narrow fix with maintainers.\n\n"
+                "## Acceptance criteria\n"
+                "- Confirm the signal against the full repository and document the result.\n"
+                "- Add a small verified fix or documentation change if the gap exists.\n"
+                "- Explain how the change was tested; do not claim unrun checks passed."
+            ),
+            "difficulty": "beginner" if idx < 2 else "intermediate",
+        })
+    roadmap = [
+        "# Revival roadmap: " + name,
+        "",
+        "This plan uses real file paths and heuristic maintenance findings; it is not an AI response.",
+        "",
+        "1. **Verify scan findings.** Review the repository README and relevant files on GitHub.",
+    ]
+    for idx, title in enumerate(titles[:4], start=2):
+        roadmap.append(str(idx) + ". **" + title + ".** Confirm the issue and prepare a focused improvement.")
+    roadmap += [
+        "6. **Ship a small contribution.** Open a reviewable PR, linking evidence and verification steps.",
+        "",
+        "## Source context",
+        "- Indexed paths: " + str(len(files)),
+        "- Example files: " + (", ".join(files[:8]) or "No files in the index"),
+        "",
+        "> Draft only. Ask maintainers before publication.",
+    ]
+    return {
+        "repo": name, "model": None, "source": "rules",
+        "contributing_md": "\n".join(docs),
+        "roadmap_md": "\n".join(roadmap),
+        "issues": issues,
+        "notice": "Gemma 4 could not complete this request. These are rules-based drafts from the live scan, not AI-generated documents. Review before publishing.",
+    }
+
+
+def _evidence_answer(snap: RepositorySnapshot, question: str) -> dict:
+    folders = build_architecture(snap.paths)
+    samples = [p for p in snap.paths if p.rsplit("/", 1)[-1].lower().startswith("readme")][:3]
+    matches = [
+        p for p in snap.paths
+        if any(word in p.lower() for word in question.lower().split() if len(word) >= 4)
+    ][:5]
+    evidence = matches or samples or sorted(snap.paths)[:3]
+    response = (
+        "Gemma 4 is temporarily unavailable, so this is an evidence-only response, not an AI answer.\n\n"
+        "This repository has " + str(len(snap.paths)) + " indexed paths. "
+        "Observed top-level areas: " + ", ".join(node.label for node in folders[:6]) + ". "
+        "To answer your question accurately, review the linked files. "
+        "If you're new to the project, start with its README and a small maintenance finding."
+    )
+    return {"answer": response, "evidence": evidence, "model": None, "mode": "rules",
+            "note": "Rules-based fallback using indexed paths. It does not infer unobserved code behavior."}
+
+
 async def generate_kit(snap: RepositorySnapshot, findings: list[str]) -> dict:
     prompt = (
         "You help an open-source maintainer prepare a DRAFT revival kit. "
@@ -125,7 +223,10 @@ async def generate_kit(snap: RepositorySnapshot, findings: list[str]) -> dict:
         "\nMAINTENANCE FINDINGS: " + "; ".join(findings[:8]) +
         "\nUNTRUSTED SOURCE EXCERPTS:\n" + _context(snap, 2800)
     )
-    guide, issue_markdown, roadmap = await _answer_with_gemma(prompt)
+    try:
+        guide, issue_markdown, roadmap = await _answer_with_gemma(prompt)
+    except HTTPException:
+        return _evidence_kit(snap, findings)
     if not guide.strip() or not roadmap.strip():
         raise HTTPException(status_code=502, detail="Gemma 4 generated an incomplete draft. Retry.")
     matches = re.findall(r"(?ms)^#{1,3}\s+([^\n]+)\n(.*?)(?=^#{1,3}\s+|\Z)", issue_markdown)
@@ -140,7 +241,7 @@ async def generate_kit(snap: RepositorySnapshot, findings: list[str]) -> dict:
                    "body": issue_markdown or "Draft two evidence-based GitHub issues before publishing.",
                    "difficulty": "beginner"}]
     return {
-        "repo": snap.repo.full_name, "model": GEMMA_MODEL,
+        "repo": snap.repo.full_name, "model": GEMMA_MODEL, "source": "gemma",
         "contributing_md": guide, "roadmap_md": roadmap, "issues": issues,
         "notice": "AI-generated drafts. Review every claim before publishing or opening an issue.",
     }
@@ -164,7 +265,10 @@ async def ask_gemma(snap: RepositorySnapshot, question: str, history: list[ChatT
         "\nSOURCE EXCERPTS:\n" + _context(snap, 3200) +
         "\nUSER QUESTION: " + question
     )
-    answer, evidence_raw, next_step = await _answer_with_gemma(prompt)
+    try:
+        answer, evidence_raw, next_step = await _answer_with_gemma(prompt)
+    except HTTPException:
+        return _evidence_answer(snap, question)
     if not answer.strip():
         raise HTTPException(status_code=502, detail="Gemma 4 returned an empty answer. Try again.")
     observed = set(snap.paths)
@@ -174,6 +278,6 @@ async def ask_gemma(snap: RepositorySnapshot, question: str, history: list[ChatT
     ][:7]
     return {
         "answer": answer[:1800] + ("\n\nNext step: " + next_step[:350] if next_step else ""),
-        "evidence": evidence, "model": GEMMA_MODEL,
+        "evidence": evidence, "model": GEMMA_MODEL, "mode": "gemma",
         "note": "Grounded in sampled public files, not code execution. Verify important claims.",
     }
