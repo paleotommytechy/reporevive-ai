@@ -144,9 +144,9 @@ export function RevivalKitPanel({ report, api, kit, onKit }: {
   return <div className="advanced-surface">
     <div className="advanced-head">
       <div>
-        <div className="advanced-eyebrow"><Sparkles size={14} /> GEMMA 4 · ACTIONABLE OUTPUT</div>
+        <div className="advanced-eyebrow"><Sparkles size={14} /> GEMMA 4 WHEN AVAILABLE · VERIFIED FALLBACK</div>
         <h2>Generate a Revival Kit</h2>
-        <p>Turn real maintenance findings into a contribution guide, reviewable GitHub issue drafts and a prioritized recovery plan.</p>
+        <p>Turn real maintenance findings into a contribution guide, reviewable issue drafts and a recovery plan. Gemma 4 enhances the drafts when available.</p>
       </div>
       {kit && <span className="advanced-tag"><Check size={14} /> {kit.source === 'gemma' ? 'Gemma drafted' : 'Evidence-based draft'}</span>}
     </div>
@@ -177,8 +177,8 @@ export function RevivalKitPanel({ report, api, kit, onKit }: {
       </div>
       <pre className="kit-preview">{active.content}</pre>
       <div className="kit-download-all">
-        <button className="advanced-primary" type="button" onClick={() => docs.forEach(doc => saveMarkdown(doc.name, doc.content))}>
-          <Download size={15} /> Download all three files
+        <button className="advanced-primary" type="button" onClick={() => saveMarkdown(name + '-REVIVAL-KIT.md', docs.map(doc => '# ' + doc.label + '\n\n' + doc.content).join('\n\n---\n\n'))}>
+          <Download size={15} /> Download complete kit (.md)
         </button>
         <span>No repository files are changed automatically.</span>
       </div>

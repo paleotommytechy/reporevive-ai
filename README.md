@@ -16,7 +16,12 @@ Built as a Hacktoberfest 2026 MVP. React + TypeScript + Tailwind CSS + FastAPI +
 - Generate actionable findings, beginner/intermediate tasks, and a transparent heuristic maintenance-readiness score.
 - Generate explanations with **Gemma 4** through the **Gemini API** using a server-side API key.
 - Copy a readable summary, explore evidence paths and jump to real GitHub files for actual scans.
-- Responsive dark UI with Overview, Findings and Revival Roadmap tabs.
+- Guided **Understand / Diagnose / Revive** modes and a one-click link to scan a real public DevDoc-AI example.
+- Interactive repository architecture explorer built from observed paths and verified GitHub file links (containment hierarchy, not invented dependencies).
+- **Generate Revival Kit:** draft CONTRIBUTING.md, proposed issue drafts, and prioritized roadmap, with copy/Markdown downloads.
+- **Ask Gemma:** grounded repository questions with matched file evidence and conversational follow-ups.
+- If additional Gemma requests fail, the kit and chat fall back to clearly labeled evidence-based guidance rather than generating fictional AI output.
+- Responsive dark UI with Overview, Findings, Roadmap, Architecture, Revival Kit and Ask Gemma sections.
 
 > **Important:** RepoRevive is *not a vulnerability scanner*. Heuristic findings may be false positives. Missing files are identified using conventional paths, not proof of absence. Generated AI summaries require human verification.
 
@@ -86,6 +91,8 @@ npm run build
 |---|---|---|
 | `GET` | `/api/health` | Health check |
 | `POST` | `/api/analyze` | Public GitHub scan; JSON: `{ "url": "https://github.com/owner/repo", "use_ai": true }` |
+| `POST` | `/api/revival-kit` | Generate reviewable Markdown drafts from a public repository, using Gemma when available, evidence-based fallback otherwise. JSON: `{ "url": "https://github.com/owner/repo" }` |
+| `POST` | `/api/ask` | Ask questions about a scanned public repo. JSON: `{ "url": "https://github.com/owner/repo", "question": "Where to start?", "history": [] }` |
 
 Example:
 
@@ -158,3 +165,13 @@ The live deployment uses two Vercel projects connected to this GitHub repository
 - **API:** [reporevive-ai-api.vercel.app/api/health](https://reporevive-ai-api.vercel.app/api/health), FastAPI root directory `backend`; production secret `GEMINI_API_KEY`.
 
 The page starts with a clean input form, **not fictional/sample data**. Paste a public GitHub URL to get a real maintenance report and (if quota permits) Gemma 4 explanation. On AI failure the backend returns specific error categories such as HTTP 429, timeout, or invalid JSON; it does not invent an AI response. Large repositories are subject to scan limits.
+
+## RepoRevive 2.0 workflow
+
+Choose **Understand**, **Diagnose** or **Revive**, paste a real GitHub URL, and start a live scan. Visit Architecture explorer to inspect a folder hierarchy based on real source paths. Visit Revival Kit to generate Markdown documents and proposed GitHub issues, or Ask Gemma to query repository evidence. Nothing is pushed to the source repository. Always review suggested changes before publishing.
+
+The initial scan uses Gemma 4 when the configured model is available. Additional model calls (Revival Kit and chat) can hit API quotas or provider errors. **If they fail**, the backend returns deterministic, labeled evidence-only drafts or answers with `source: "rules"` / `mode: "rules"`. Those responses must not be presented as Gemma-generated. The app's live scan still works without a successful AI response.
+
+Safeguards: fixed GitHub URL allowlist, bounded archive parsing without code execution, short-lived in-process snapshot cache (3 minutes, up to 25 entries), and a basic per-worker request throttle (12 AI interactions/minute). **Vercel serverless workers do not share cache or rate-limit state.** Production-scale abuse prevention would require a shared rate limiter, auth and persistence.
+
+Run `python -m unittest discover -s tests -v` from `backend` to verify architecture mapping, honest fallback generation, input validation and core scan behavior. The `Backend tests` GitHub workflow runs on pushes and pull requests.

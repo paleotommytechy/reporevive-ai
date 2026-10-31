@@ -112,3 +112,7 @@
 .guide-example{border:none;text-decoration:underline;cursor:pointer;color:#63dfb8;font-size:11px;background:transparent;margin-top:9px}
 @media(max-width:720px){.advanced-surface{padding:18px 14px}.advanced-head{flex-direction:column}.advanced-head h2{font-size:22px}.arch-node-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.arch-source{flex-direction:column;align-items:center}.arch-source strong{font-size:11px;text-align:center}.arch-node-sub{font-size:9px}.kit-intro{flex-wrap:wrap}.kit-intro button{width:100%}.kit-teasers{grid-template-columns:1fr}.kit-actions{flex-direction:column;align-items:flex-start}.ask-form{flex-direction:column}.ask-form button{width:100%}}
 @media(max-width:420px){.arch-node-grid{grid-template-columns:1fr}.guide-modes button{flex:1;justify-content:center}.kit-tabs button{padding:12px;font-size:10px}}
+
+.kit-origin{margin:0;padding:13px 17px;font-size:11px;line-height:1.6;border-bottom:1px solid #354b4e}
+.kit-origin.gemma{color:#a0eccc;background:#1c3530}
+.kit-origin.rules{color:#e3d2a6;background:#3a3023}
