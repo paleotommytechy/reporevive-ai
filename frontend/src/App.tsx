@@ -2,7 +2,7 @@ import { useMemo, useState, type FormEvent } from 'react'
 import {
   Activity, ArrowDownRight, ArrowRight, ArrowUpRight, Check, CheckCircle2,
   ChevronDown, ChevronRight, CircleAlert, ClipboardCheck, Clock3, Code2, Copy,
-  ExternalLink, FileCode2, FileText, GitBranch, Github, HeartHandshake, Info,
+  ExternalLink, FileCode2, FileText, GitBranch, Github, HeartHandshake,
   Layers3, LayoutDashboard, Link2, ListTodo, LoaderCircle, Menu, MoonStar, Plus,
   RefreshCcw, Search, ShieldCheck, Sparkles, Star, TerminalSquare, X,
 } from 'lucide-react'
