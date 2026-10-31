@@ -1,0 +1,15 @@
+# RepoRevive AI backend — Render Blueprint
+# Deploy from https://dashboard.render.com/blueprints using this repository.
+# The React frontend remains on Vercel.
+services:
+  - type: web
+    name: reporevive-ai-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: FRONTEND_ORIGINS
+        value: https://reporevive-ai.vercel.app
