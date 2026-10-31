@@ -1,5 +1,8 @@
 # RepoRevive AI
 
+> **Live cloud preview:** https://reporevive-ai.vercel.app/  
+> The public deployment demonstrates the React dashboard using explicitly labeled sample data. For live GitHub scanning and optional local Qwen inference, run the FastAPI service as described below.
+
 **Give forgotten code a second life.** A free, open-source GitHub repository analyzer with optional local, open-weight AI explanations.
 
 Built as a Hacktoberfest 2026 MVP. React + TypeScript + Tailwind CSS + FastAPI + GitHub + Ollama/Qwen2.5-Coder.
