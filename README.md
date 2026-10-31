@@ -115,16 +115,9 @@ curl -X POST http://localhost:8000/api/analyze \
 
 ## Deploying
 
-### Quick cloud visualization — free GitHub Pages
+### Production: Vercel frontend and FastAPI API
 
-This repository includes `.github/workflows/pages.yml`, which builds and deploys the **actual React dashboard** on each push to `main`. It hosts the static frontend, which stays in a clean empty state until the API is configured; it does **not** host FastAPI.
-
-1. Create a **public** repository called `reporevive-ai` on GitHub, leaving the repository empty.
-2. Push the files in this project to its `main` branch.
-3. In the repository open **Settings → Pages → Build and deployment → Source → GitHub Actions**.
-4. In **Actions**, check the workflow named **Publish preview to GitHub Pages**. Once it succeeds, open `https://YOUR-USERNAME.github.io/reporevive-ai/`.
-
-The Vite `base` is automatically set to `/reporevive-ai/` in the Pages build; local development uses `/`. The hosted preview does **not** contact your laptop's `localhost` address. To enable live cloud scanning, deploy the FastAPI API separately and configure `VITE_API_BASE_URL` in the frontend build, plus `FRONTEND_ORIGINS` on the backend.
+Both Vercel projects deploy automatically from `main`: React frontend at https://reporevive-ai.vercel.app/ and Python API at https://reporevive-ai-api.vercel.app/api/health. The API key stays in backend environment variables, never in browser code.
 
 The frontend is deployed on Vercel and communicates with the `reporevive-ai-api` Vercel FastAPI service via `VITE_API_BASE_URL`. The `GEMINI_API_KEY` secret belongs only to the **backend** Vercel project.
 

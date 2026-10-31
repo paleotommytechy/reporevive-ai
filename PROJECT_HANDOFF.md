@@ -11,6 +11,6 @@ The runnable RepoRevive AI project has already been created. **Do not reinitiali
 
 **Team work split:** ChatGPT implements changes as patches or downloadable versions; Antigravity can integrate DevRelay and handle local verification. Avoid simultaneous edits to the same files.
 
-## Cloud preview deployment
+## Production deployment
 
-`.github/workflows/pages.yml` publishes the React frontend in empty-state mode through GitHub Pages whenever `main` changes. Choose **Settings → Pages → Source: GitHub Actions** in the repository. For a live cloud scan, separately deploy FastAPI and set `VITE_API_BASE_URL`; store GEMINI_API_KEY only in the backend Vercel environment; never expose it to the frontend.
+Both frontend and backend deploy on Vercel automatically from `main`. The frontend uses `VITE_API_BASE_URL`, the backend uses server-only `GEMINI_API_KEY`. The live dashboard has no fictional data. Run a real public scan to demonstrate the Gemma 4 integration; follow-up AI calls may use explicitly labeled rules-based fallbacks when the provider is unavailable.
