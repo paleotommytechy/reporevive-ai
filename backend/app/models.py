@@ -37,7 +37,7 @@ class RepoInfo(BaseModel):
 
 class AIInsights(BaseModel):
     status: Literal["complete", "unavailable", "skipped"] = "skipped"
-    model: str = "qwen2.5-coder:1.5b"
+    model: str = "gemma-4-26b-a4b-it"
     summary: str | None = None
     architecture: str | None = None
     next_step: str | None = None
