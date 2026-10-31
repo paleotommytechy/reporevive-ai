@@ -33,5 +33,5 @@ export const sampleReport: AnalysisResponse = {
     { title: 'Add a basic smoke test for a core feature', description: 'A small test improves confidence while reviving the project.', difficulty: 'beginner', evidence: [] },
     { title: 'Add a CI workflow that runs tests on pull requests', description: 'Automate basic checks when new changes are proposed.', difficulty: 'beginner', evidence: [] },
   ],
-  ai: { status: 'skipped', model: 'qwen2.5-coder:1.5b', summary: null, architecture: null, next_step: null, note: 'This is fictional sample data. Analyze a real public GitHub repository for actual findings.' },
+  ai: { status: 'skipped', model: 'gemma-4-26b-a4b-it', summary: null, architecture: null, next_step: null, note: 'This is fictional sample data. Analyze a real public GitHub repository for actual findings.' },
 }
