@@ -44,6 +44,14 @@ class AIInsights(BaseModel):
     note: str | None = None
 
 
+class ArchitectureNode(BaseModel):
+    id: str
+    label: str
+    role: str
+    file_count: int
+    paths: list[str] = Field(default_factory=list)
+
+
 class AnalysisResponse(BaseModel):
     source: Literal["github"]
     repo: RepoInfo
@@ -54,5 +62,6 @@ class AnalysisResponse(BaseModel):
     findings: list[Finding]
     tasks: list[Task]
     important_files: list[str]
+    architecture: list[ArchitectureNode] = Field(default_factory=list)
     signals: dict[str, bool]
     ai: AIInsights
