@@ -9,7 +9,8 @@ import type { AnalysisResponse, ArchitectureNode } from './types'
 export interface KitIssue { title: string; body: string; difficulty: 'beginner' | 'intermediate' }
 export interface RevivalKit {
   repo: string
-  model: string
+  model: string | null
+  source: 'gemma' | 'rules'
   contributing_md: string
   roadmap_md: string
   issues: KitIssue[]
@@ -19,6 +20,7 @@ export interface ChatMessage {
   question: string
   answer: string
   evidence: string[]
+  mode?: 'gemma' | 'rules'
 }
 
 function sourceLink(report: AnalysisResponse, path: string) {
@@ -146,7 +148,7 @@ export function RevivalKitPanel({ report, api, kit, onKit }: {
         <h2>Generate a Revival Kit</h2>
         <p>Turn real maintenance findings into a contribution guide, reviewable GitHub issue drafts and a prioritized recovery plan.</p>
       </div>
-      {kit && <span className="advanced-tag"><Check size={14} /> Kit generated</span>}
+      {kit && <span className="advanced-tag"><Check size={14} /> {kit.source === 'gemma' ? 'Gemma drafted' : 'Evidence-based draft'}</span>}
     </div>
     <div className="kit-intro">
       <div className="kit-intro-icon"><PackageOpen size={25} /></div>
@@ -164,9 +166,10 @@ export function RevivalKitPanel({ report, api, kit, onKit }: {
       <div><ArrowRight size={19} /><strong>Recovery roadmap</strong><span>A realistic path forward</span></div>
     </div>}
     {kit && <div className="kit-body">
+      <div className={'kit-origin ' + (kit.source === 'gemma' ? 'gemma' : 'rules')}>{kit.notice}</div>
       <div className="kit-tabs">{docs.map(doc => <button key={doc.id} type="button" className={openDoc === doc.id ? 'active' : ''} onClick={() => setOpenDoc(doc.id)}>{doc.label}</button>)}</div>
       <div className="kit-actions">
-        <span>AI-generated Markdown · review before use</span>
+        <span>{kit.source === 'gemma' ? 'Gemma 4-generated Markdown' : 'Rules-based Markdown fallback'} · review before use</span>
         <div>
           <button type="button" onClick={() => copy(active.content, openDoc)}><Copy size={14} /> {copied === openDoc ? 'Copied' : 'Copy'}</button>
           <button type="button" onClick={() => saveMarkdown(active.name, active.content)}><Download size={14} /> Download .md</button>
@@ -208,7 +211,7 @@ export function AskGemmaPanel({ report, api, messages, onMessages }: {
         history: messages.slice(-3).map(item => ({ question: item.question, answer: item.answer })),
       })
       if (typeof result.answer !== 'string' || !result.answer.trim()) throw new Error('Gemma 4 did not answer this question.')
-      onMessages([...messages, { question: prompt, answer: result.answer, evidence: result.evidence || [] }])
+      onMessages([...messages, { question: prompt, answer: result.answer, evidence: result.evidence || [], mode: result.mode === 'rules' ? 'rules' : 'gemma' }])
       setQuestion('')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Gemma 4 could not answer your question.')
@@ -228,7 +231,7 @@ export function AskGemmaPanel({ report, api, messages, onMessages }: {
       {!messages.length && <div className="ask-greeting"><div className="ask-bot"><Bot size={21} /></div><strong>What would you like to understand?</strong><p>I'm ready to help you explore {report.repo.full_name}. Select a question or type your own.</p></div>}
       {messages.map((item, i) => <div key={i} className="ask-turn">
         <div className="ask-user">{item.question}</div>
-        <div className="ask-answer"><div className="ask-answer-head"><Sparkles size={15} /> Gemma 4 <span>Grounded answer</span></div><p>{item.answer}</p>
+        <div className="ask-answer"><div className="ask-answer-head"><Sparkles size={15} /> {item.mode === 'rules' ? 'Evidence-only fallback' : 'Gemma 4'} <span>{item.mode === 'rules' ? 'AI unavailable' : 'Grounded answer'}</span></div><p>{item.answer}</p>
           {item.evidence.length > 0 && <div className="arch-evidence">{fileLinks(report, item.evidence)}</div>}
         </div>
       </div>)}
