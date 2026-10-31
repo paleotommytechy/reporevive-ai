@@ -9,7 +9,7 @@ from .github_client import GitHubError, fetch_repository
 from .models import AnalyzeRequest, AnalysisResponse
 
 app = FastAPI(title="RepoRevive AI API", version="0.1.0", description="Public GitHub maintenance-readiness analysis and optional open-weight AI insights")
-origins = [url.strip() for url in os.getenv("FRONTEND_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",") if url.strip()]
+origins = [url.strip() for url in os.getenv("FRONTEND_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173,https://reporevive-ai.vercel.app").split(",") if url.strip()]
 app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=False, allow_methods=["GET", "POST"], allow_headers=["Content-Type"])
 
 
