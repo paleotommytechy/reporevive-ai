@@ -15,12 +15,12 @@ GEMMA_MODEL = os.getenv("GEMMA_MODEL", "gemma-4-26b-a4b-it")
 
 
 def _prompt(snap: RepositorySnapshot, result: AnalysisResponse) -> str:
-    remaining = 14000
+    remaining = 5800
     excerpts: list[str] = []
     for path, content in snap.text_files.items():
-        if remaining <= 0 or len(excerpts) >= 10:
+        if remaining <= 0 or len(excerpts) >= 7:
             break
-        sample = content[:min(2000, remaining)]
+        sample = content[:min(1100, remaining)]
         excerpts.append(f"FILE: {path}\n{sample}")
         remaining -= len(sample)
     return f"""You are an open-source repository maintenance assistant.
@@ -75,7 +75,7 @@ async def _gemma(prompt: str) -> AIInsights:
             note="Gemma 4 cloud analysis is not configured. Set GEMINI_API_KEY on the backend host; never put it in VITE_* variables.")
     endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMMA_MODEL}:generateContent"
     try:
-        async with httpx.AsyncClient(timeout=httpx.Timeout(65.0), follow_redirects=False) as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(45.0), follow_redirects=False) as client:
             response = await client.post(endpoint, headers={
                 "x-goog-api-key": key, "Content-Type": "application/json"
             }, json={
@@ -87,9 +87,27 @@ async def _gemma(prompt: str) -> AIInsights:
         parts = candidates[0]["content"]["parts"] if candidates else []
         raw = "\n".join(p.get("text", "") for p in parts if isinstance(p, dict) and not p.get("thought"))
         return _build_insights(_parse_result(raw), GEMMA_MODEL, "Gemma 4 through the Gemini API")
-    except (httpx.HTTPError, ValueError, KeyError, IndexError, TypeError, json.JSONDecodeError):
+    except httpx.HTTPStatusError as exc:
+        status = exc.response.status_code
+        reasons = {
+            400: "Gemma 4 rejected the request (HTTP 400). Check the selected model and API parameters.",
+            401: "Gemini API authentication failed (HTTP 401). Check the backend API key.",
+            403: "Gemini API access was denied (HTTP 403). Check the key's permissions or available quota.",
+            404: "The selected Gemma 4 model was not found (HTTP 404). Check GEMMA_MODEL.",
+            429: "Gemma 4 rate limit or free-tier quota reached (HTTP 429). Retry after the quota resets.",
+            503: "Gemma 4 service temporarily unavailable (HTTP 503). Retry shortly.",
+        }
         return AIInsights(status="unavailable", model=GEMMA_MODEL,
-            note="Hosted Gemma 4 could not complete the request. Check the backend API key, Gemini API quota and logs. Static findings are still available.")
+            note=reasons.get(status, f"Gemma 4 API returned HTTP {status}. Check backend logs and quota."))
+    except httpx.TimeoutException:
+        return AIInsights(status="unavailable", model=GEMMA_MODEL,
+            note="Gemma 4 request timed out. Try a smaller repository or retry when the service is less busy.")
+    except httpx.HTTPError:
+        return AIInsights(status="unavailable", model=GEMMA_MODEL,
+            note="Could not reach the Gemini API. Check backend network access and retry.")
+    except (ValueError, KeyError, IndexError, TypeError, json.JSONDecodeError):
+        return AIInsights(status="unavailable", model=GEMMA_MODEL,
+            note="Gemma 4 returned an incomplete or invalid JSON report. Retry this repository.")
 
 
 async def enrich_with_ai(snap: RepositorySnapshot, result: AnalysisResponse) -> AIInsights:

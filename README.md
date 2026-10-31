@@ -53,7 +53,7 @@ Open http://localhost:5173. Enter a public GitHub repository URL, then click **A
 
 Get an API key from [Google AI Studio](https://aistudio.google.com/apikey). In the **backend hosting dashboard**, add a secret environment variable named `GEMINI_API_KEY` with its value. Never commit or paste the actual key into source code, README, Vite variables, browser JavaScript, or screenshots.
 
-The default model is `gemma-4-26b-a4b-it`, a Google open-weight Gemma 4 model hosted by the Gemini API. This model currently has a free API tier subject to quota. Set Gemma 4 inference is the only supported AI provider.
+The default model is `gemma-4-26b-a4b-it`, a Google open-weight model hosted through the Gemini API. Cloud inference uses the server-side `GEMINI_API_KEY` and is subject to Google API rate limits.
 
 To analyze public GitHub repositories online, also deploy the FastAPI backend and set the **frontend build variable** `VITE_API_BASE_URL` to its public HTTPS URL. Redeploy the Vite frontend after setting the variable. No API key belongs in the Vite frontend.
 
@@ -119,7 +119,7 @@ This repository includes `.github/workflows/pages.yml`, which builds and deploys
 
 The Vite `base` is automatically set to `/reporevive-ai/` in the Pages build; local development uses `/`. The hosted preview does **not** contact your laptop's `localhost` address. To enable live cloud scanning, deploy the FastAPI API separately and configure `VITE_API_BASE_URL` in the frontend build, plus `FRONTEND_ORIGINS` on the backend.
 
-The frontend can be published as a static site (`npm run build`, output `frontend/dist`). The backend can run from `backend/Dockerfile` using a DigitalOcean App Platform service. Set `VITE_API_BASE_URL` to the public API URL **at build time** and `FRONTEND_ORIGINS` to the frontend URL.
+The frontend is deployed on Vercel and communicates with the `reporevive-ai-api` Vercel FastAPI service via `VITE_API_BASE_URL`. The `GEMINI_API_KEY` secret belongs only to the **backend** Vercel project.
 
 **AI hosting note:** the hosted backend calls Gemma 4 through the Gemini API using a securely stored `GEMINI_API_KEY`. The API key must never be prefixed `VITE_`. Add request rate limits and abuse protection before public high-traffic use.
 
@@ -149,10 +149,12 @@ MIT — see [LICENSE.md](LICENSE.md) (also available as [LICENSE](LICENSE) for s
 If you have Git and the [GitHub CLI](https://cli.github.com/) installed and authenticated with `gh auth login`, use `./publish-to-github.ps1` from PowerShell (or `bash publish-to-github.sh` on macOS/Linux). These scripts initialize Git if needed, create the **public** `reporevive-ai` repository in your authenticated account when it doesn't exist, and push `main`. They never store your GitHub password or personal access tokens in source files. You still need to select **GitHub Actions** under the repository's GitHub Pages settings.
 
 
-### Deploy the backend using Render
 
-A `render.yaml` Blueprint is included. In [Render](https://dashboard.render.com/blueprints), connect this GitHub repository and deploy the web service. In Render service environment settings, add `GEMINI_API_KEY` as a **secret** and redeploy. Open `https://YOUR-RENDER-SERVICE.onrender.com/api/health` to verify that the API is running.
+### Running entirely on Vercel
 
-Next, in the existing Vercel frontend project, set **Build environment variable** `VITE_API_BASE_URL=https://YOUR-RENDER-SERVICE.onrender.com` and redeploy the frontend. Use a real public GitHub URL to verify a live scan with `ai.status=complete`.
+The live deployment uses two Vercel projects connected to this GitHub repository:
 
-The Gemini API's Gemma 4 tier is currently free up to provider rate limits. The Render free backend can sleep when idle, adding cold-start latency. If no provider key is configured, real GitHub maintenance checks still work, but AI insights will visibly report `unavailable`.
+- **Frontend:** [reporevive-ai.vercel.app](https://reporevive-ai.vercel.app/), Vite root directory `frontend`; production variable `VITE_API_BASE_URL=https://reporevive-ai-api.vercel.app`.
+- **API:** [reporevive-ai-api.vercel.app/api/health](https://reporevive-ai-api.vercel.app/api/health), FastAPI root directory `backend`; production secret `GEMINI_API_KEY`.
+
+The page starts with a clean input form, **not fictional/sample data**. Paste a public GitHub URL to get a real maintenance report and (if quota permits) Gemma 4 explanation. On AI failure the backend returns specific error categories such as HTTP 429, timeout, or invalid JSON; it does not invent an AI response. Large repositories are subject to scan limits.
