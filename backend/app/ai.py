@@ -80,7 +80,21 @@ async def _gemma(prompt: str) -> AIInsights:
                 "x-goog-api-key": key, "Content-Type": "application/json"
             }, json={
                 "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-                "generationConfig": {"temperature": 0.1, "maxOutputTokens": 1024},
+                "generationConfig": {
+                    "temperature": 0.1,
+                    "maxOutputTokens": 2048,
+                    "thinkingConfig": {"thinkingLevel": "minimal"},
+                    "responseMimeType": "application/json",
+                    "responseSchema": {
+                        "type": "OBJECT",
+                        "properties": {
+                            "summary": {"type": "STRING"},
+                            "architecture": {"type": "STRING"},
+                            "next_step": {"type": "STRING"},
+                        },
+                        "required": ["summary", "architecture", "next_step"],
+                    },
+                },
             })
             response.raise_for_status()
         candidates = response.json().get("candidates", [])
