@@ -33,7 +33,7 @@ export interface AIInsights {
   note: string | null
 }
 export interface AnalysisResponse {
-  source: 'github' | 'sample'
+  source: 'github'
   repo: RepoInfo
   score: number
   files_scanned: number

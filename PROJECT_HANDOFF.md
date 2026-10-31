@@ -13,4 +13,4 @@ The runnable RepoRevive AI project has already been created. **Do not reinitiali
 
 ## Cloud preview deployment
 
-`.github/workflows/pages.yml` publishes the React frontend in sample-report mode through GitHub Pages whenever `main` changes. Choose **Settings → Pages → Source: GitHub Actions** in the repository. For a live cloud scan, separately deploy FastAPI and set `VITE_API_BASE_URL`; do not expose a personal machine's Ollama port to the internet.
+`.github/workflows/pages.yml` publishes the React frontend in empty-state mode through GitHub Pages whenever `main` changes. Choose **Settings → Pages → Source: GitHub Actions** in the repository. For a live cloud scan, separately deploy FastAPI and set `VITE_API_BASE_URL`; do not expose a personal machine's Ollama port to the internet.

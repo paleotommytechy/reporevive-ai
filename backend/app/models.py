@@ -45,7 +45,7 @@ class AIInsights(BaseModel):
 
 
 class AnalysisResponse(BaseModel):
-    source: Literal["github", "sample"]
+    source: Literal["github"]
     repo: RepoInfo
     score: int = Field(ge=0, le=100)
     files_scanned: int

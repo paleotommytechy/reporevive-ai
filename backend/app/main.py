@@ -4,7 +4,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .ai import enrich_with_ai
 from .analyzer import analyze_snapshot
-from .demo import sample_report
 from .github_client import GitHubError, fetch_repository
 from .models import AnalyzeRequest, AnalysisResponse
 
@@ -16,11 +15,6 @@ app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=Fals
 @app.get("/api/health")
 async def health():
     return {"ok": True, "service": "RepoRevive AI", "version": "0.1.0"}
-
-
-@app.get("/api/demo", response_model=AnalysisResponse)
-async def demo():
-    return sample_report()
 
 
 @app.post("/api/analyze", response_model=AnalysisResponse)

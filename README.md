@@ -1,11 +1,11 @@
 # RepoRevive AI
 
 > **Live cloud preview:** https://reporevive-ai.vercel.app/  
-> The public deployment demonstrates the React dashboard using explicitly labeled sample data. Live GitHub scans need a deployed FastAPI backend; AI insights use hosted Gemma 4 through the Gemini API when GEMINI_API_KEY is configured.
+> The public Vercel dashboard opens with a clean repository input and shows reports only after a live GitHub scan.
 
 **Give forgotten code a second life.** A free, open-source GitHub repository analyzer with hosted Gemma 4 AI explanations.
 
-Built as a Hacktoberfest 2026 MVP. React + TypeScript + Tailwind CSS + FastAPI + GitHub + Gemma 4 (with optional Ollama fallback).
+Built as a Hacktoberfest 2026 MVP. React + TypeScript + Tailwind CSS + FastAPI + GitHub + Gemma 4.
 
 ## What works
 
@@ -14,8 +14,7 @@ Built as a Hacktoberfest 2026 MVP. React + TypeScript + Tailwind CSS + FastAPI +
 - Inspect a bounded copy of its source **without executing or extracting files**.
 - Detect common maintenance signals: root README, license, conventional tests, CI, contribution guide, dependency manifests, inactivity and archived status.
 - Generate actionable findings, beginner/intermediate tasks, and a transparent heuristic maintenance-readiness score.
-- Generate explanations with **Gemma 4** through the **Gemini API** using a server-side API key (or optionally Qwen2.5-Coder via local Ollama).
-- See a **clearly marked fictional sample dashboard** without running the backend.
+- Generate explanations with **Gemma 4** through the **Gemini API** using a server-side API key.
 - Copy a readable summary, explore evidence paths and jump to real GitHub files for actual scans.
 - Responsive dark UI with Overview, Findings and Revival Roadmap tabs.
 
@@ -23,7 +22,7 @@ Built as a Hacktoberfest 2026 MVP. React + TypeScript + Tailwind CSS + FastAPI +
 
 ## Quick start
 
-Requirements: Node.js 20+, Python 3.11+, npm. Ollama is optional.
+Requirements: Node.js 20+, Python 3.11+, npm. Cloud AI requires a server-side Gemini API key.
 
 ### 1. Run backend
 
@@ -48,17 +47,16 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:5173. Click **Explore sample report** to reset to demo data, or enter a real URL and click **Analyze repo**.
+Open http://localhost:5173. Enter a public GitHub repository URL, then click **Analyze repo**. The dashboard does not display fabricated results.
 
 ### 3. Enable cloud AI — no local model installation required
 
 Get an API key from [Google AI Studio](https://aistudio.google.com/apikey). In the **backend hosting dashboard**, add a secret environment variable named `GEMINI_API_KEY` with its value. Never commit or paste the actual key into source code, README, Vite variables, browser JavaScript, or screenshots.
 
-The default model is `gemma-4-26b-a4b-it`, a Google open-weight Gemma 4 model hosted by the Gemini API. This model currently has a free API tier subject to quota. Set `AI_PROVIDER=gemma` (default).
+The default model is `gemma-4-26b-a4b-it`, a Google open-weight Gemma 4 model hosted by the Gemini API. This model currently has a free API tier subject to quota. Set Gemma 4 inference is the only supported AI provider.
 
 To analyze public GitHub repositories online, also deploy the FastAPI backend and set the **frontend build variable** `VITE_API_BASE_URL` to its public HTTPS URL. Redeploy the Vite frontend after setting the variable. No API key belongs in the Vite frontend.
 
-**Optional local alternative:** Set `AI_PROVIDER=ollama`, install Ollama, and run `ollama pull qwen2.5-coder:1.5b`. This is not required when using the hosted Gemma API.
 
 ### Optional environment variables
 
@@ -68,8 +66,6 @@ Set these in your terminal or hosting provider before launching. FastAPI does no
 |---|---|---|
 | `GITHUB_TOKEN` | unset | Raises GitHub's public API rate limit. Keep private. |
 | `FRONTEND_ORIGINS` | localhost:5173,127.0.0.1:5173 | Comma-separated allowed CORS origins |
-| `AI_PROVIDER` | gemma | `gemma` (cloud, recommended) or `ollama` (optional local) |\n| `GEMINI_API_KEY` | unset | **Server-side secret** for the hosted Gemma 4 Gemini API |\n| `GEMMA_MODEL` | gemma-4-26b-a4b-it | Hosted Gemma 4 model ID |\n| `OLLAMA_URL` | http://localhost:11434 | Optional local Ollama endpoint; backend only |
-| `OLLAMA_MODEL` | qwen2.5-coder:1.5b | Local model name |
 | `VITE_API_BASE_URL` | localhost:8000 (development only) | Frontend backend URL; the static cloud preview has no backend unless configured |
 
 ## Test
@@ -89,7 +85,6 @@ npm run build
 | Method | Path | Description |
 |---|---|---|
 | `GET` | `/api/health` | Health check |
-| `GET` | `/api/demo` | **Explicitly fictional** sample report |
 | `POST` | `/api/analyze` | Public GitHub scan; JSON: `{ "url": "https://github.com/owner/repo", "use_ai": true }` |
 
 Example:
@@ -115,7 +110,7 @@ curl -X POST http://localhost:8000/api/analyze \
 
 ### Quick cloud visualization — free GitHub Pages
 
-This repository includes `.github/workflows/pages.yml`, which builds and deploys the **actual React dashboard** on each push to `main`. It hosts the static frontend with its clearly labelled fictional sample report; it does **not** host FastAPI or Ollama.
+This repository includes `.github/workflows/pages.yml`, which builds and deploys the **actual React dashboard** on each push to `main`. It hosts the static frontend, which stays in a clean empty state until the API is configured; it does **not** host FastAPI.
 
 1. Create a **public** repository called `reporevive-ai` on GitHub, leaving the repository empty.
 2. Push the files in this project to its `main` branch.
@@ -126,7 +121,7 @@ The Vite `base` is automatically set to `/reporevive-ai/` in the Pages build; lo
 
 The frontend can be published as a static site (`npm run build`, output `frontend/dist`). The backend can run from `backend/Dockerfile` using a DigitalOcean App Platform service. Set `VITE_API_BASE_URL` to the public API URL **at build time** and `FRONTEND_ORIGINS` to the frontend URL.
 
-**AI hosting note:** No Ollama server is needed for the cloud version: the hosted backend calls Gemma 4 through the Gemini API using a securely stored `GEMINI_API_KEY`. The API key must never be prefixed `VITE_`. Add request rate limits and abuse protection before public high-traffic use.
+**AI hosting note:** the hosted backend calls Gemma 4 through the Gemini API using a securely stored `GEMINI_API_KEY`. The API key must never be prefixed `VITE_`. Add request rate limits and abuse protection before public high-traffic use.
 
 ## Contributing
 

@@ -1,4 +1,4 @@
-"""AI codebase explanations using hosted Gemma 4 (default) or optional local Ollama.
+"""AI codebase explanations using hosted Gemma 4 through Gemini API.
 
 Never execute repository code. Source file contents are untrusted prompt data.
 API keys are read from backend environment variables only.
@@ -12,7 +12,6 @@ from .github_client import RepositorySnapshot
 from .models import AIInsights, AnalysisResponse
 
 GEMMA_MODEL = os.getenv("GEMMA_MODEL", "gemma-4-26b-a4b-it")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5-coder:1.5b")
 
 
 def _prompt(snap: RepositorySnapshot, result: AnalysisResponse) -> str:
@@ -93,23 +92,5 @@ async def _gemma(prompt: str) -> AIInsights:
             note="Hosted Gemma 4 could not complete the request. Check the backend API key, Gemini API quota and logs. Static findings are still available.")
 
 
-async def _ollama(prompt: str) -> AIInsights:
-    url = os.getenv("OLLAMA_URL", "http://localhost:11434").rstrip("/")
-    try:
-        async with httpx.AsyncClient(timeout=httpx.Timeout(75.0)) as client:
-            response = await client.post(f"{url}/api/generate", json={
-                "model": OLLAMA_MODEL, "prompt": prompt, "stream": False,
-                "format": "json", "options": {"temperature": 0.1, "num_predict": 450},
-            })
-            response.raise_for_status()
-        return _build_insights(_parse_result(response.json()["response"]), OLLAMA_MODEL, "local Ollama")
-    except (httpx.HTTPError, ValueError, KeyError, IndexError, TypeError, json.JSONDecodeError):
-        return AIInsights(status="unavailable", model=OLLAMA_MODEL,
-            note="Ollama is unavailable. Start Ollama and pull the configured model, or use AI_PROVIDER=gemma and GEMINI_API_KEY.")
-
-
 async def enrich_with_ai(snap: RepositorySnapshot, result: AnalysisResponse) -> AIInsights:
-    prompt = _prompt(snap, result)
-    if os.getenv("AI_PROVIDER", "gemma").lower().strip() == "ollama":
-        return await _ollama(prompt)
-    return await _gemma(prompt)
+    return await _gemma(_prompt(snap, result))

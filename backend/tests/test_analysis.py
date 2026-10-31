@@ -3,7 +3,6 @@ import unittest
 from zipfile import ZipFile
 
 from app.analyzer import analyze_snapshot
-from app.demo import sample_report
 from app.github_client import GitHubError, RepositorySnapshot, inspect_archive, parse_github_url
 from app.models import RepoInfo
 
@@ -44,8 +43,13 @@ class AnalyzerTests(unittest.TestCase):
         self.assertTrue(result.signals["tests"])
 
     def test_missing_files_produce_actionable_findings(self):
-        report = sample_report()
-        self.assertEqual(report.source, "sample")
+        snap = RepositorySnapshot(
+            repo=RepoInfo(full_name="acme/legacy", url="https://github.com/acme/legacy"),
+            paths=["package.json", "src/main.ts"], text_files={"package.json": "{}"},
+            partial=False,
+        )
+        report = analyze_snapshot(snap)
+        self.assertEqual(report.source, "github")
         self.assertLess(report.score, 100)
         self.assertTrue(any(f.id == "readme" for f in report.findings))
         self.assertTrue(all(t.title for t in report.tasks))
