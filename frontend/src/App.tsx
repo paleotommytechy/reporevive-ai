@@ -7,9 +7,10 @@ import {
   RefreshCcw, Search, ShieldCheck, Sparkles, Star, TerminalSquare, X,
 } from 'lucide-react'
 import type { AnalysisResponse, Finding, Severity } from './types'
+import { ArchitectureExplorer, AskGemmaPanel, RevivalKitPanel, type ChatMessage, type RevivalKit } from './Advanced'
 
 const API = (import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.DEV ? 'http://localhost:8000' : '')).replace(/\/$/, '')
-type View = 'overview' | 'findings' | 'roadmap'
+type View = 'overview' | 'findings' | 'roadmap' | 'architecture' | 'revival' | 'ask'
 
 function ReadinessCircle({ score }: { score: number }) {
   const label = score >= 80 ? 'Strong foundation' : score >= 55 ? 'Room to improve' : 'Needs attention'
@@ -62,6 +63,9 @@ function Sidebar({ view, onView, mobileOpen, setMobileOpen }: {
     { id: 'overview', icon: LayoutDashboard, label: 'Overview' },
     { id: 'findings', icon: ShieldCheck, label: 'Maintenance findings' },
     { id: 'roadmap', icon: ListTodo, label: 'Revival roadmap' },
+    { id: 'architecture', icon: Layers3, label: 'Architecture explorer' },
+    { id: 'revival', icon: Sparkles, label: 'Generate Revival Kit' },
+    { id: 'ask', icon: Code2, label: 'Ask Gemma' },
   ]
   const go = (v: View) => { onView(v); setMobileOpen(false) }
   return <>
@@ -83,6 +87,9 @@ function App() {
   const [report, setReport] = useState<AnalysisResponse | null>(null)
   const [url, setUrl] = useState('')
   const [useAi, setUseAi] = useState(true)
+  const [intent, setIntent] = useState<'overview' | 'findings' | 'revival'>('overview')
+  const [kit, setKit] = useState<RevivalKit | null>(null)
+  const [chat, setChat] = useState<ChatMessage[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -96,6 +103,8 @@ function App() {
     e.preventDefault()
     setError('')
     setReport(null)
+    setKit(null)
+    setChat([])
     setView('overview')
     setLoading(true)
     try {
@@ -104,7 +113,7 @@ function App() {
       const body = await response.json()
       if (!response.ok) throw new Error(typeof body.detail === 'string' ? body.detail : 'Unable to analyze this repository.')
       setReport(body as AnalysisResponse)
-      setView('overview')
+      setView(intent)
     } catch (err) {
       setError(err instanceof TypeError ? 'Cannot reach the backend. Check the cloud API deployment or start FastAPI on port 8000.' : err instanceof Error ? err.message : 'Unexpected error. Please retry.')
     } finally { setLoading(false) }
@@ -126,13 +135,26 @@ function App() {
   return <div className="app-shell">
     <Sidebar view={view} onView={setView} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
     <main className="main-area">
-      <header className="topbar"><div className="flex items-center gap-3"><button className="mobile-menu" onClick={() => setMobileOpen(true)} aria-label="Open navigation"><Menu size={21} /></button><span className="topbar-crumb">Workspace</span><ChevronRight size={14} className="text-slate-600" /><span className="topbar-current">{view === 'overview' ? 'Overview' : view === 'findings' ? 'Maintenance findings' : 'Revival roadmap'}</span></div><div className="topbar-right"><div className="topbar-status"><span className="live-dot" /> Open-source AI toolkit</div><span className="topbar-divider" /><span className="topbar-avatar">RR</span></div></header>
+      <header className="topbar"><div className="flex items-center gap-3"><button className="mobile-menu" onClick={() => setMobileOpen(true)} aria-label="Open navigation"><Menu size={21} /></button><span className="topbar-crumb">Workspace</span><ChevronRight size={14} className="text-slate-600" /><span className="topbar-current">{({ overview: 'Overview', findings: 'Maintenance findings', roadmap: 'Revival roadmap', architecture: 'Architecture', revival: 'Revival Kit', ask: 'Ask Gemma' } as const)[view]}</span></div><div className="topbar-right"><div className="topbar-status"><span className="live-dot" /> Open-source AI toolkit</div><span className="topbar-divider" /><span className="topbar-avatar">RR</span></div></header>
       <div className="content-area">
         <div className="page-intro"><div><div className="eyebrow"><Sparkles size={13} /> YOUR OPEN-SOURCE CO-PILOT <span className="eyebrow-line" /></div><h1>Give forgotten code<br /><span>a second life.</span></h1><p>Understand any public GitHub repository, uncover maintenance gaps,<br className="desktop-break" /> and create a clear path for its next contributor.</p></div><div className="intro-ornament" aria-hidden="true"><div className="orbit orbit-one" /><div className="orbit orbit-two" /><div className="orbit-core"><Code2 size={42} /></div><span className="orbit-spark orbit-spark-a" /><span className="orbit-spark orbit-spark-b" /></div></div>
+        <div className="guide-modes" aria-label="Choose an analysis goal">
+          {([
+            ['overview', 'Understand', Layers3],
+            ['findings', 'Diagnose', ShieldCheck],
+            ['revival', 'Revive', Sparkles],
+          ] as const).map(([id, label, Icon]) => <button type="button" key={id} className={intent === id ? 'active' : ''}
+            onClick={() => { setIntent(id); if (report) setView(id) }}>
+            <Icon size={16} /><span className="mode-tag">{label}</span>
+          </button>)}
+        </div>
         <form onSubmit={scan} className="search-card">
           <div className="search-heading"><div className="search-heading-left"><div className="search-mini-icon"><Github size={19} /></div><div><strong>Analyze a repository</strong><span>Paste a public GitHub URL to get started</span></div></div><span className="small-neutral"><span className="live-dot" /> LIVE GITHUB DATA</span></div>
           <div className="input-layout"><div className="url-input-wrap"><Link2 size={18} className="input-icon" /><input aria-label="GitHub repository URL" value={url} onChange={e => setUrl(e.target.value)} placeholder="https://github.com/owner/repository" required type="url" pattern="https://github\.com/.*" /><span className="input-hint">HTTPS</span></div><button disabled={loading} type="submit" className="scan-button">{loading ? <LoaderCircle size={16} className="animate-spin" /> : <Search size={16} />}{loading ? 'Analyzing…' : 'Analyze repo'}<ArrowRight size={17} /></button></div>
           <div className="search-bottom"><label className="ai-toggle"><input type="checkbox" checked={useAi} onChange={e => setUseAi(e.target.checked)} /><span className="switch"><span /></span><Sparkles size={13} /><span>Enable Gemma 4 AI insights</span></label><span className="search-footnote">{!API ? 'Cloud API not configured' : 'Read-only analysis · No code executed'}</span></div>
+          <button type="button" className="guide-example" onClick={() => setUrl('https://github.com/paleotommytechy/DevDoc-AI')}>
+            Try with a real repository: DevDoc-AI <ArrowUpRight size={12} className="inline" />
+          </button>
           {error && <div className="error-message" role="alert"><CircleAlert size={17} />{error}</div>}
         </form>
 
@@ -162,6 +184,9 @@ function App() {
           <div className="bottom-grid"><section className="surface-card ai-card"><div className="panel-heading"><div><div className="panel-eyebrow">OPEN-WEIGHT INTELLIGENCE</div><h3><Sparkles size={19} className="inline text-mint mr-2" />AI codebase insight</h3></div><span className={`ai-indicator ${report.ai.status}`}><span className="live-dot" />{report.ai.status === 'complete' ? 'MODEL RESPONDED' : report.ai.status === 'unavailable' ? 'GEMMA 4 UNAVAILABLE' : 'NOT RUN'}</span></div><p className="ai-summary">{report.ai.summary || report.ai.note || 'AI insights were not requested.'}</p>{report.ai.architecture && <div className="ai-extra"><strong>Architecture</strong><p>{report.ai.architecture}</p></div>}{report.ai.next_step && <div className="ai-next"><ArrowUpRight size={16} /><span>{report.ai.next_step}</span></div>}<div className="ai-footer"><div className="ai-model"><span className="model-icon"><TerminalSquare size={14} /></span>{report.ai.model}</div><span className="model-meta">GEMMA 4 · GEMINI API</span></div></section>
           <section className="surface-card activity-card"><div className="panel-heading"><div><div className="panel-eyebrow">REPOSITORY CONTEXT</div><h3>Project snapshot</h3></div><Layers3 size={19} className="muted-icon" /></div><div className="snapshot-row"><span><GitBranch size={16} /> Default branch</span><strong>{report.repo.default_branch}</strong></div><div className="snapshot-row"><span><Clock3 size={16} /> Last pushed</span><strong>{report.repo.last_push ? new Date(report.repo.last_push).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : 'Unknown'}</strong></div><div className="snapshot-row"><span><FileText size={16} /> Indexed paths</span><strong>{report.total_files}</strong></div><div className="snapshot-row"><span><ShieldCheck size={16} /> Archived</span><strong>{report.repo.archived ? 'Yes' : 'No'}</strong></div><button className="snapshot-cta" onClick={() => setView('roadmap')}>Explore the revival roadmap <ArrowRight size={16} /></button></section></div>
         </>}
+        {view === 'architecture' && <ArchitectureExplorer report={report} />}
+        {view === 'revival' && <RevivalKitPanel report={report} api={API} kit={kit} onKit={setKit} />}
+        {view === 'ask' && <AskGemmaPanel report={report} api={API} messages={chat} onMessages={setChat} />}
         {view === 'findings' && <section className="surface-card full-panel"><div className="panel-heading"><div><div className="panel-eyebrow">EXPLAINABLE, EVIDENCE-LED REVIEW</div><h3>Maintenance findings <span className="heading-count">{report.findings.length}</span></h3></div><button className="outline-action" onClick={copyReport}>{copied ? <Check size={15} /> : <Copy size={15} />}{copied ? 'Copied' : 'Copy report'}</button></div><p className="full-panel-caption">These are quick-scan maintenance indicators, not verified vulnerabilities. Click any finding to view a suggested action and the available evidence.</p><div className="filter-row">{(['all', 'high', 'medium', 'low'] as const).map(item => <button key={item} onClick={() => setFilter(item)} className={`filter-pill ${filter === item ? 'selected' : ''}`}>{item === 'all' ? 'All findings' : `${item[0].toUpperCase()}${item.slice(1)} priority`}</button>)}</div><div className="findings-list expanded-list">{filteredFindings.map(item => <FindingRow key={item.id} finding={item} report={report} />)}{filteredFindings.length === 0 && <div className="empty-panel"><CheckCircle2 size={24} />No matching findings</div>}</div></section>}
         {view === 'roadmap' && <div className="roadmap-grid"><section className="surface-card full-panel"><div className="panel-heading"><div><div className="panel-eyebrow">YOUR NEXT CONTRIBUTION STARTS HERE</div><h3>Revival roadmap</h3></div><span className="task-count"><ListTodo size={15} /> {report.tasks.length} suggested tasks</span></div><p className="full-panel-caption">Tasks are prioritized from detected maintenance signals. Confirm them with maintainers before opening pull requests.</p><div className="roadmap-list">{report.tasks.map((task, index) => <div className="task-row" key={`${task.title}-${index}`}><div className="task-number">{String(index + 1).padStart(2, '0')}</div><div className="task-content"><div className="task-title-row"><h4>{task.title}</h4><span className={`difficulty ${task.difficulty}`}>{task.difficulty}</span></div><p>{task.description}</p><Evidence report={report} paths={task.evidence} /></div><ArrowUpRight size={17} className="task-arrow" /></div>)}</div></section><section className="surface-card roadmap-aside"><div className="panel-eyebrow">A BETTER WAY TO CONTRIBUTE</div><h3>Small fixes.<br /><span>Big impact.</span></h3><p>Great open source gets better when the next person knows where to begin.</p><div className="roadmap-aside-icon"><Plus size={32} /></div><button onClick={copyReport} className="copy-roadmap">{copied ? 'Copied to clipboard' : 'Copy contribution plan'} {copied ? <Check size={16} /> : <Copy size={16} />}</button></section></div>}
         </>}

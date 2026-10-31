@@ -32,6 +32,13 @@ export interface AIInsights {
   next_step: string | null
   note: string | null
 }
+export interface ArchitectureNode {
+  id: string
+  label: string
+  role: string
+  file_count: number
+  paths: string[]
+}
 export interface AnalysisResponse {
   source: 'github'
   repo: RepoInfo
@@ -42,6 +49,7 @@ export interface AnalysisResponse {
   findings: Finding[]
   tasks: Task[]
   important_files: string[]
+  architecture: ArchitectureNode[]
   signals: Record<string, boolean>
   ai: AIInsights
 }
