@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import {
-  ArrowRight, ArrowUpRight, Bot, Check, ChevronDown, Copy, Download,
+  ArrowRight, ArrowUpRight, Bot, Check, Copy, Download,
   FileCode2, FilePlus2, FolderGit2, GitBranch, LoaderCircle,
   MessageCircle, Network, PackageOpen, Send, Sparkles, ShieldCheck,
 } from 'lucide-react'
